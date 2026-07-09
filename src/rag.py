@@ -1,8 +1,8 @@
 from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_classic.chains import RetrievalQA
+from langchain_ollama import ChatOllama
 
 load_dotenv()
 
@@ -22,8 +22,8 @@ vector_store = FAISS.load_local(
 retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 
 # Load Gemini model
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash"
+llm = ChatOllama(
+    model="qwen2.5:0.5b"
 )
 
 # Create RAG chain
@@ -39,6 +39,8 @@ while True:
     if question.lower() == "exit":
         break
 
-    answer = qa_chain.run(question)
+    
+    result = qa_chain.invoke({"query": question})
+    answer = result["result"]
     print("\nAnswer:")
     print(answer)
