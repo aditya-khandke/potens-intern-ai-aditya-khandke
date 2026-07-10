@@ -2,16 +2,18 @@
 
 ## Overview
 
-This project implements a Retrieval-Augmented Generation (RAG) chatbot capable of answering questions from multiple PDF documents using semantic search and a local Large Language Model (LLM).
+This project implements a Retrieval-Augmented Generation (RAG) chatbot capable of answering questions from PDF documents using semantic search and a local Large Language Model (LLM).
 
 The system ingests PDF documents, splits them into chunks, creates embeddings, stores them in a FAISS vector database, retrieves relevant information based on user queries, and generates answers with citations.
 
-The project also provides:
-- A FastAPI backend with REST endpoints
-- A Streamlit frontend interface
-- Citation support
-- Contradiction checking between statements
-- Offline inference using a local LLM
+The project provides:
+
+- FastAPI backend with REST APIs
+- Streamlit frontend interface
+- Source citations
+- Contradiction detection
+- Local LLM inference using Ollama
+- Hallucination reduction using strict context-based prompting
 
 ---
 
@@ -28,6 +30,7 @@ The project also provides:
 - Streamlit frontend
 - Local LLM inference using Ollama
 - Offline execution without paid APIs
+- Hallucination handling for unsupported queries
 
 ---
 
@@ -110,13 +113,13 @@ pip install -r requirements.txt
 
 ## Local LLM Setup
 
-Install Ollama from:
+Install Ollama:
 
 ```text
 https://ollama.com/download
 ```
 
-Pull the model:
+Download the model:
 
 ```bash
 ollama pull qwen2.5:0.5b
@@ -132,7 +135,7 @@ ollama list
 
 ## Adding Documents
 
-Place all PDF files inside the `docs` folder.
+Place all PDF files inside the `docs` directory.
 
 Example:
 
@@ -148,12 +151,12 @@ docs/
 
 ## Chunking Strategy
 
-Documents are split into smaller overlapping chunks before embedding generation.
+Documents are divided into overlapping chunks before embedding generation.
 
 - Chunk Size: **500 characters**
 - Chunk Overlap: **50 characters**
 
-The overlap preserves context between adjacent chunks and improves retrieval quality for questions spanning multiple sections of a document.
+The overlap preserves context between neighboring chunks and improves retrieval quality for questions that span multiple sections of a document.
 
 ---
 
@@ -173,7 +176,7 @@ Indexed 71 chunks successfully
 
 ---
 
-## Running Terminal Chatbot
+## Running the Terminal Chatbot
 
 Run:
 
@@ -187,7 +190,7 @@ Example:
 Ask a question (or type 'exit'): What is the leave policy?
 ```
 
-Example output:
+Example response:
 
 ```text
 Answer:
@@ -202,7 +205,7 @@ Sources:
 
 ## Running FastAPI Backend
 
-Start backend server:
+Start the API server:
 
 ```bash
 uvicorn src.api:app --reload
@@ -226,7 +229,7 @@ http://127.0.0.1:8000/docs
 
 ### POST `/ask`
 
-Answers user questions using RAG retrieval.
+Answers user questions using document retrieval and RAG.
 
 #### Request
 
@@ -289,7 +292,7 @@ Frontend URL:
 http://localhost:8501
 ```
 
-The frontend sends requests to the FastAPI backend and displays answers along with citations.
+The frontend sends requests to the FastAPI backend and displays answers with citations.
 
 ---
 
@@ -305,41 +308,43 @@ The frontend sends requests to the FastAPI backend and displays answers along wi
 
 ## Design Decisions
 
-- FAISS was selected for fast local vector search.
-- HuggingFace Embeddings were used to avoid external API costs.
-- Ollama + Qwen2.5 were selected to allow completely offline inference.
-- FastAPI was chosen for lightweight API development.
-- Streamlit was used for rapid UI development.
+- **FAISS** was selected for efficient local vector search.
+- **HuggingFace Embeddings** were used to avoid paid APIs.
+- **Ollama + Qwen2.5** were chosen for completely offline inference.
+- **FastAPI** was selected for lightweight API development.
+- **Streamlit** was used for rapid frontend development.
 
 ---
 
 ## Handling Hallucinations
 
-The system avoids unsupported answers by checking retrieved documents before generating responses.
+The chatbot answers questions only using retrieved document context.
 
-If no relevant context is found, the application returns:
+A custom prompt instructs the model to avoid generating unsupported information.
+
+If no relevant information is found in the knowledge base, the system returns:
 
 ```text
 The provided documents do not contain information about this topic.
 ```
 
-instead of generating a fabricated answer.
+instead of generating fabricated answers.
 
 ---
 
 ## Limitations
 
-- Multilingual retrieval quality depends on embedding performance.
-- Contradiction detection currently compares statements using the LLM and does not perform document-level reasoning.
-- Large models may require additional RAM.
+- Multilingual retrieval quality depends on embedding model performance.
+- Contradiction detection currently relies on LLM reasoning and not document-grounded verification.
+- Larger local models may require additional memory resources.
 
 ---
 
 ## Future Improvements
 
 - Better multilingual retrieval
-- Confidence scores for answers
-- Re-ranking layer
+- Confidence scoring for answers
+- Retrieval re-ranking
 - Docker deployment
 - Authentication for API endpoints
 - Support for additional document formats
@@ -355,6 +360,7 @@ instead of generating a fabricated answer.
 4. Replace Gemini with local Ollama model for RAG responses
 5. Add FastAPI endpoints and Streamlit interface for RAG chatbot
 6. Update README with setup and usage instructions
+7. Improve hallucination handling in RAG pipeline
 ```
 
 ---
@@ -362,8 +368,8 @@ instead of generating a fabricated answer.
 ## AI Usage Log
 
 | Tool | Approximate Usage | Purpose |
-|------|------------------|---------|
-| ChatGPT | ~200 messages | Debugging, architecture guidance, FastAPI integration, Streamlit integration, README generation |
+|------|-------------------|---------|
+| ChatGPT | ~200 messages | Debugging, architecture guidance, FastAPI integration, Streamlit integration, hallucination handling improvements, and README generation |
 | Gemini | ~20 messages | Generating required Pdfs |
 
 ---
