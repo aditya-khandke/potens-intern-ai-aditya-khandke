@@ -1,26 +1,32 @@
-# RAG Chatbot Assignment
+# RAG Chatbot with Citations
 
 ## Overview
 
-This project implements a Retrieval-Augmented Generation (RAG) chatbot capable of answering questions from company policy documents stored in PDF format.
+This project implements a Retrieval-Augmented Generation (RAG) chatbot capable of answering questions from multiple PDF documents using semantic search and a local Large Language Model (LLM).
 
-The application uses semantic search with a FAISS vector database and generates responses using a local Large Language Model (LLM) running through Ollama.
+The system ingests PDF documents, splits them into chunks, creates embeddings, stores them in a FAISS vector database, retrieves relevant information based on user queries, and generates answers with citations.
+
+The project also provides:
+- A FastAPI backend with REST endpoints
+- A Streamlit frontend interface
+- Citation support
+- Contradiction checking between statements
+- Offline inference using a local LLM
 
 ---
 
 ## Features
 
 - PDF document ingestion
-- Automatic text chunking
-- Embedding generation using HuggingFace models
-- FAISS vector database for semantic search
+- Text chunking and embedding generation
+- FAISS vector database
 - Retrieval-Augmented Generation (RAG)
-- Local LLM inference using Ollama
 - Source citations with file name and page number
-- FastAPI backend API
-- `/ask` endpoint for question answering
-- `/contradict` endpoint for contradiction detection
-- Streamlit frontend interface
+- FastAPI backend
+- `/ask` endpoint
+- `/contradict` endpoint
+- Streamlit frontend
+- Local LLM inference using Ollama
 - Offline execution without paid APIs
 
 ---
@@ -30,14 +36,18 @@ The application uses semantic search with a FAISS vector database and generates 
 ```text
 potens-intern-ai-aditya-khandke/
 │
-├── docs/                      # PDF documents
-├── faiss_index/               # FAISS vector database
+├── docs/
+│   ├── Leave_Policy.pdf
+│   ├── Employee_Handbook.pdf
+│   └── ...
+│
+├── faiss_index/
 │
 ├── src/
-│   ├── ingest.py              # Document ingestion and indexing
-│   ├── rag.py                 # Terminal-based chatbot
-│   ├── api.py                 # FastAPI backend
-│   └── app.py                 # Streamlit frontend
+│   ├── ingest.py
+│   ├── rag.py
+│   ├── api.py
+│   └── app.py
 │
 ├── requirements.txt
 ├── README.md
@@ -102,9 +112,11 @@ pip install -r requirements.txt
 
 Install Ollama from:
 
+```text
 https://ollama.com/download
+```
 
-Download the model:
+Pull the model:
 
 ```bash
 ollama pull qwen2.5:0.5b
@@ -113,14 +125,14 @@ ollama pull qwen2.5:0.5b
 Verify installation:
 
 ```bash
-ollama --version
+ollama list
 ```
 
 ---
 
-## Add Documents
+## Adding Documents
 
-Place all PDF files inside the `docs/` folder.
+Place all PDF files inside the `docs` folder.
 
 Example:
 
@@ -128,20 +140,32 @@ Example:
 docs/
 ├── Leave_Policy.pdf
 ├── Employee_Handbook.pdf
-└── Work_From_Home_Policy.pdf
+├── Work_From_Home_Policy.pdf
+└── Benefits_Policy.pdf
 ```
 
 ---
 
-## Create Vector Database
+## Chunking Strategy
 
-Run the ingestion script:
+Documents are split into smaller overlapping chunks before embedding generation.
+
+- Chunk Size: **500 characters**
+- Chunk Overlap: **50 characters**
+
+The overlap preserves context between adjacent chunks and improves retrieval quality for questions spanning multiple sections of a document.
+
+---
+
+## Creating the Vector Database
+
+Run:
 
 ```bash
 python src/ingest.py
 ```
 
-Expected output:
+Example output:
 
 ```text
 Indexed 71 chunks successfully
@@ -149,9 +173,9 @@ Indexed 71 chunks successfully
 
 ---
 
-## Running the Terminal Chatbot
+## Running Terminal Chatbot
 
-Start the chatbot:
+Run:
 
 ```bash
 python src/rag.py
@@ -178,7 +202,7 @@ Sources:
 
 ## Running FastAPI Backend
 
-Start the API server:
+Start backend server:
 
 ```bash
 uvicorn src.api:app --reload
@@ -202,9 +226,9 @@ http://127.0.0.1:8000/docs
 
 ### POST `/ask`
 
-Answers questions using the RAG pipeline.
+Answers user questions using RAG retrieval.
 
-Request:
+#### Request
 
 ```json
 {
@@ -212,7 +236,7 @@ Request:
 }
 ```
 
-Response:
+#### Response
 
 ```json
 {
@@ -232,7 +256,7 @@ Response:
 
 Checks whether two statements contradict each other.
 
-Request:
+#### Request
 
 ```json
 {
@@ -241,7 +265,7 @@ Request:
 }
 ```
 
-Response:
+#### Response
 
 ```json
 {
@@ -265,7 +289,7 @@ Frontend URL:
 http://localhost:8501
 ```
 
-The frontend sends user queries to the FastAPI `/ask` endpoint and displays answers along with source citations.
+The frontend sends requests to the FastAPI backend and displays answers along with citations.
 
 ---
 
@@ -276,6 +300,49 @@ The frontend sends user queries to the FastAPI `/ask` endpoint and displays answ
 - What is the work from home policy?
 - What employee benefits are provided?
 - What are the attendance rules?
+
+---
+
+## Design Decisions
+
+- FAISS was selected for fast local vector search.
+- HuggingFace Embeddings were used to avoid external API costs.
+- Ollama + Qwen2.5 were selected to allow completely offline inference.
+- FastAPI was chosen for lightweight API development.
+- Streamlit was used for rapid UI development.
+
+---
+
+## Handling Hallucinations
+
+The system avoids unsupported answers by checking retrieved documents before generating responses.
+
+If no relevant context is found, the application returns:
+
+```text
+The provided documents do not contain information about this topic.
+```
+
+instead of generating a fabricated answer.
+
+---
+
+## Limitations
+
+- Multilingual retrieval quality depends on embedding performance.
+- Contradiction detection currently compares statements using the LLM and does not perform document-level reasoning.
+- Large models may require additional RAM.
+
+---
+
+## Future Improvements
+
+- Better multilingual retrieval
+- Confidence scores for answers
+- Re-ranking layer
+- Docker deployment
+- Authentication for API endpoints
+- Support for additional document formats
 
 ---
 
@@ -292,16 +359,15 @@ The frontend sends user queries to the FastAPI `/ask` endpoint and displays answ
 
 ---
 
-## Author
+## AI Usage Log
 
-**Aditya Khandke**
+| Tool | Approximate Usage | Purpose |
+|------|------------------|---------|
+| ChatGPT | ~200 messages | Debugging, architecture guidance, FastAPI integration, Streamlit integration, README generation |
+| Gemini | ~20 messages | Generating required Pdfs |
 
 ---
 
-## Future Improvements
+## Author
 
-- Multilingual support
-- Confidence score for retrieved answers
-- Docker deployment
-- Authentication for API endpoints
-- Support for additional document formats
+**Aditya Khandke**
