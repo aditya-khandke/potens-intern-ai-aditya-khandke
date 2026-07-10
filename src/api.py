@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-
+from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_classic.chains import RetrievalQA
@@ -24,11 +24,33 @@ llm = ChatOllama(
     model="qwen2.5:0.5b",
     num_ctx=512
 )
+prompt_template = """
+You are a document question answering assistant.
 
+Answer ONLY using the provided context.
+
+If the answer is not present in the context, respond exactly with:
+
+"The provided documents do not contain information about this topic."
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
+"""
+
+PROMPT = PromptTemplate(
+    template=prompt_template,
+    input_variables=["context", "question"]
+)
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
     retriever=retriever,
-    return_source_documents=True
+    return_source_documents=True,
+    chain_type_kwargs={"prompt": PROMPT}
 )
 
 class QuestionRequest(BaseModel):
@@ -47,7 +69,7 @@ def ask_question(request: QuestionRequest):
        answer = "The provided documents do not contain information about this topic."
 
     return {
-        "answer": result["result"],
+        "answer": answer,
         "sources": [
             {
                 "file": doc.metadata.get("source", "Unknown"),
