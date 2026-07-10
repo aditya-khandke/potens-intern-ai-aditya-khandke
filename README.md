@@ -374,6 +374,14 @@ instead of generating fabricated answers.
 
 ---
 
+## Note
+
+The project originally used the Gemini API for response generation. However, due to API quota limitations and to ensure completely offline and reproducible execution, the implementation was migrated to Ollama with the Qwen2.5 model running locally.
+
+This eliminates dependency on external APIs and avoids rate limits or API key exhaustion issues.
+
+---
+
 ## Author
 
 **Aditya Khandke**
