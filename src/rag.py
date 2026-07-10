@@ -19,19 +19,24 @@ vector_store = FAISS.load_local(
 )
 
 # Create retriever
-retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+retriever = vector_store.as_retriever(search_kwargs={"k": 1})
 
 # Load Gemini model
 llm = ChatOllama(
-    model="qwen2.5:0.5b"
+    model="qwen2.5:0.5b",
+    num_ctx=512
+
 )
 
 # Create RAG chain
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
-    retriever=retriever
+    retriever=retriever,
+    return_source_documents=True
 )
 
+
+# Ask questions
 # Ask questions
 while True:
     question = input("\nAsk a question (or type 'exit'): ")
@@ -39,8 +44,20 @@ while True:
     if question.lower() == "exit":
         break
 
-    
     result = qa_chain.invoke({"query": question})
+
     answer = result["result"]
+    sources = result["source_documents"]
+
     print("\nAnswer:")
     print(answer)
+
+    print("\nSources:")
+    for i, doc in enumerate(sources, 1):
+        source = doc.metadata.get("source", "Unknown")
+        page = doc.metadata.get("page", "N/A")
+
+        print(f"{i}. File: {source}")
+        print(f"   Page: {page}")
+        print(f"   Snippet: {doc.page_content[:150]}...")
+        print()
